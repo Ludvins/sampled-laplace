@@ -13,11 +13,11 @@ from flax.jax_utils import unreplicate
 from flax.training import checkpoints
 from tqdm import trange
 
-import jaxutils.models as models
+import jaxutils_extra.models as models
 import wandb
 from jaxutils.data.pt_preprocess import NumpyLoader
-from jaxutils.data.tf_image import PYTORCH_TO_TF_NAMES, get_image_dataloader
-from jaxutils.data.tf_image import get_image_dataset as get_tf_image_dataset
+from jaxutils_extra.tf_image import PYTORCH_TO_TF_NAMES, get_image_dataloader
+from jaxutils_extra.tf_image import get_image_dataset as get_tf_image_dataset
 from jaxutils.data.utils import get_agnostic_iterator
 from jaxutils.train.utils import (
     eval_epoch,
@@ -49,7 +49,7 @@ from src.sampling_train_utils import train_and_eval_sampling_epoch
 
 ml_collections.config_flags.DEFINE_config_file(
     "config",
-    "./experiments/cifar100_gcloud_em.py",
+    "./experiments/cifar10_gcloud_em.py",
     "Training configuration.",
     lock_config=True,
 )
@@ -196,17 +196,28 @@ def main(config):
         model = model_cls(**config.model.to_dict())
 
         dummy_init = jnp.expand_dims(jnp.ones(config.dataset.image_shape), 0)
-        _ = model.init(model_rng, dummy_init)
+        variables = model.init(model_rng, dummy_init)
+
+        model_state, params = variables.pop("params")
+
+        #print(params)
 
         ################# Load from checkpoint ################################
-        checkpoint_dir = Path(config.checkpoint_dir).resolve()
-        checkpoint_dir.mkdir(parents=True, exist_ok=True)
+        from jaxutils_extra.models.resnet_torch_cifar import get_resnet
+        from jaxutils_extra.models.convert_utils_torch_cifar import convert_model
+        model_torch = get_resnet("resnet20", 10)
+
+        new_params_pytree = convert_model("resnet20", model_torch, variables)
+        state, params = new_params_pytree.pop('params')
+
+        # checkpoint_dir = Path(config.checkpoint_dir).resolve()
+        # checkpoint_dir.mkdir(parents=True, exist_ok=True)
         save_dir = Path(config.save_dir).resolve()
         save_dir.mkdir(parents=True, exist_ok=True)
 
-        print(f"checkpoint_dir: {checkpoint_dir}")
-        checkpoint_path = checkpoints.latest_checkpoint(checkpoint_dir)
-        restored_state = checkpoints.restore_checkpoint(checkpoint_path, target=None)
+        # print(f"checkpoint_dir: {checkpoint_dir}")
+        # checkpoint_path = checkpoints.latest_checkpoint(checkpoint_dir)
+        # restored_state = checkpoints.restore_checkpoint(checkpoint_path, target=None)
 
         ################## Setup EM Step ######################################
         λ = config.prior_prec
@@ -246,8 +257,8 @@ def main(config):
 
         w0s_prior, w0s_data, inv_scale_vec = get_sto_samples(
             model=model,
-            params=restored_state["params"],
-            model_state=restored_state["model_state"],
+            params=params,#restored_state["params"],
+            model_state=state,#restored_state["model_state"],
             data_iterator=get_agnostic_iterator(
                 unshuffled_train_loader, config.dataset_type
             ),
@@ -322,7 +333,7 @@ def main(config):
         update_config_dict(config, run, train_config)
 
         # Initialise w_lin as zeroes
-        w_lin = jax.tree_map(lambda x: jnp.zeros_like(x), restored_state["params"])
+        w_lin = jax.tree_map(lambda x: jnp.zeros_like(x), params)#restored_state["params"])
         # Initialise samples as zeroes
         w_samples = jax.tree_map(lambda x: jnp.zeros_like(x), w0s)  # (K, PyTree)
 
@@ -334,8 +345,8 @@ def main(config):
         if config.sampling.compute_exact_w_samples:
             exact_w_samples, H_plus_λ_I = compute_exact_samples(
                 model=model,
-                params=restored_state["params"],
-                model_state=restored_state["model_state"],
+                params=params,#restored_state["params"],
+                model_state=state,#restored_state["model_state"],
                 data_iterator=get_agnostic_iterator(
                     unshuffled_train_loader, config.dataset_type
                 ),
@@ -371,9 +382,9 @@ def main(config):
             # Create Linear Train State
             w_lin_state = LinearTrainState.create(
                 apply_fn=model.apply,
-                params=restored_state["params"],
+                params=params,#restored_state["params"],
                 tx=opt_w_lin,
-                model_state=restored_state["model_state"],
+                model_state=state,#restored_state["model_state"],
                 w_lin=w_lin,  # Init zero at EM_step=0, otherwise at previous.
                 prior_prec=λ,  # this will change during EM
                 scale_vec=scale_vec,  # If g_prior, this will be not None.
@@ -403,8 +414,8 @@ def main(config):
             w_samples_state = SamplingTrainState.create(
                 apply_fn=model.apply,
                 tx=opt_w_samples,
-                params=restored_state["params"],
-                model_state=restored_state["model_state"],
+                params=params,#restored_state["params"],
+                model_state=state,#restored_state["model_state"],
                 w_lin=w_lin_state.w_lin,  # Use MAP from current EM step.
                 prior_prec=λ,  # this will update each step
                 w0_samples=w0_samples,
@@ -539,8 +550,8 @@ def main(config):
                 # TODO: STO lambda, do we need these here?
                 exact_w_samples, H_plus_λ_I = compute_exact_samples(
                     model,
-                    restored_state["params"],
-                    restored_state["model_state"],
+                    params,#restored_state["params"],
+                    state,#restored_state["model_state"],
                     get_agnostic_iterator(unshuffled_train_loader, config.dataset_type),
                     get_agnostic_iterator(samples_loader, config.dataset_type),
                     prior_prec=new_λ,
@@ -557,8 +568,8 @@ def main(config):
                 )
                 _, H_plus_exact_λ_I = compute_exact_samples(
                     model,
-                    restored_state["params"],
-                    restored_state["model_state"],
+                    params,#restored_state["params"],
+                    state,#restored_state["model_state"],
                     get_agnostic_iterator(unshuffled_train_loader, config.dataset_type),
                     get_agnostic_iterator(samples_loader, config.dataset_type),
                     prior_prec=exact_new_λ,
