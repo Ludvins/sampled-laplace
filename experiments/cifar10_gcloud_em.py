@@ -41,8 +41,6 @@ def get_config():
 
     # Add METADATA information from jaxutils
     for key in METADATA:
-        print(config.dataset)
-        print(METADATA)
         config.dataset[key] = METADATA[key][config.dataset.dataset_name]
 
     # Model Configs
@@ -164,6 +162,6 @@ def get_config():
     config.wandb = ml_collections.ConfigDict()
     config.wandb.log = False
     config.wandb.project = "linearised-NNs"
-    config.wandb.entity = "shreyaspadhy"
+    config.wandb.entity = "-"
     config.wandb.code_dir = "./linearised-NNs"
     return config

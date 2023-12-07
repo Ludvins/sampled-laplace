@@ -1,31 +1,42 @@
 # sampled-laplace
 This repository includes Jax code and experiments for the paper [Sampling-based inference for large linear models, with application to linearised Laplace]().
 
+**Edit**: This fork contains changes to apply Sampled Laplace to Pre-trained Pytorch ResNet networks from (torchvision)[https://raw.githubusercontent.com/pytorch/vision/v0.9.1/torchvision/models/resnet.py]. Changes to `jaxutils` are inside `jaxutils_extra` so the sub-repository is unchanged. Imports are changed accordingly.
+
+The pretrained network maintain their exact MAP metrics after these changes. The desired ResNet to use can be chosen in `experiments/cifar10_gcloud_em.py` and `experiments/cifar10_gcloud_eval.py` under the flag `config.model_name = "ResNet20"`. Options are `ResNet20`, `ResNet32`, `ResNet44` and `ResNet56`.
+
 
 ## Run experiments
 
-As an example, to run stochastic EM for a linearised Laplace model using the LeNetSmall architecture on the MNIST dataset on a Google Cloud TPU VM, run the following command:
+To run stochastic EM for a linearised Laplace model using the ResNet architecture on the Cifar10 dataset on a Google Cloud TPU VM, run the following command:
 
 ```bash
-python src/em_trainer.py --config experiments/mnist_gloud_em.py
+python src/em_trainer.py --config experiments/cifar10_gcloud_em.py
 ```
+
+For getting results metrics do:
+
+
+```bash
+python src/em_eval.py --config experiments/cifar10_gcloud_eval.py
+```
+
 ## Cloning the Repository
 
 Since the repository uses submodules, it is recommended to clone the repository with the following command:
 
 ```bash
-git clone --recursive sampled-laplace
-git submodule update --init --recursive
+git clone --recursive git@github.com:Ludvins/sampled-laplace.git
 ```
 
 ## Installation Instructions
 
+The used and tested python version is `Python 3.9.5`. Do the following commands to create an environment and install the needed packages.
+
 ```bash
-sudo apt-get install python3.9-venv
-python3.9 -m venv ~/.virtualenvs/sampled
-source ~/.virtualenvs/sampled/bin/activate
+python3.9 -m venv .venv
+source .venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
 pip install -e .
-python3.9 -m ipykernel install --user --name=sampled
 ```

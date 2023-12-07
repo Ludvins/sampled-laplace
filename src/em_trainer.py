@@ -2,6 +2,7 @@ import logging
 from pathlib import Path
 from typing import Optional
 
+import flax
 import jax
 import jax.numpy as jnp
 import jax.random as random
@@ -198,7 +199,7 @@ def main(config):
         dummy_init = jnp.expand_dims(jnp.ones(config.dataset.image_shape), 0)
         variables = model.init(model_rng, dummy_init)
 
-        model_state, params = variables.pop("params")
+        model_state, params = flax.core.pop(variables, 'params')
 
         #print(params)
 
@@ -208,7 +209,9 @@ def main(config):
         model_torch = get_resnet("resnet20", 10)
 
         new_params_pytree = convert_model("resnet20", model_torch, variables)
-        state, params = new_params_pytree.pop('params')
+        state, params = flax.core.pop(new_params_pytree, 'params')
+
+        #state, params = new_params_pytree.pop('params')
 
         # checkpoint_dir = Path(config.checkpoint_dir).resolve()
         # checkpoint_dir.mkdir(parents=True, exist_ok=True)

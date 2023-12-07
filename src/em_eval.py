@@ -11,7 +11,7 @@ from flax.training import checkpoints
 
 import jaxutils_extra.models as models
 import wandb
-from jaxutils.data.pt_ood import load_corrupted_dataset, load_rotated_dataset
+from jaxutils_extra.pt_ood import load_corrupted_dataset, load_rotated_dataset
 from jaxutils.data.utils import get_agnostic_iterator
 from jaxutils.train.classification import create_eval_step
 from jaxutils.train.utils import eval_epoch
@@ -69,6 +69,7 @@ def main(config):
         # checkpoint_dir = checkpoint_dir / "w_samples"
         em_steps = jnp.arange(config.num_em_steps)
         for em_step in em_steps:
+            print(em_step)
             checkpoint_dir = Path(config.checkpoint_dir).resolve()
             checkpoint_dir = checkpoint_dir / f"em_{em_step}" / "w_samples"
             print(f"checkpoint_dir: {checkpoint_dir}")
@@ -94,6 +95,9 @@ def main(config):
                 load_dataset_fn = load_rotated_dataset
             elif config.eval_dataset == "corrupted":
                 datasplits = [0, 1, 2, 3, 4, 5]
+                load_dataset_fn = load_corrupted_dataset
+            elif config.eval_dataset == "original":
+                datasplits = [0]
                 load_dataset_fn = load_corrupted_dataset
 
             prediction_method = config.sampling.get("prediction_method", "gibbs")
