@@ -9,7 +9,7 @@ import torch
 from absl import app, flags
 from flax.training import checkpoints
 
-import jaxutils.models as models
+import jaxutils_extra.models as models
 import wandb
 from jaxutils.data.pt_ood import load_corrupted_dataset, load_rotated_dataset
 from jaxutils.data.utils import get_agnostic_iterator
