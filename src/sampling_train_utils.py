@@ -173,8 +173,8 @@ def eval_sampled_laplace_epoch(
         eval_metrics = predict_step_fn(
             state, batch[0], batch[1], batch_rng=shard_prng_key(batch_rng)
         )
-        eval_metrics = unreplicate(eval_metrics)
 
+        eval_metrics = unreplicate(eval_metrics)
         eval_batch_metrics.append(eval_metrics)
         wandb_run.log(
             batchwise_metrics_dict(

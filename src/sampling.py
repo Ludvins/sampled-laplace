@@ -750,7 +750,6 @@ def gibbs_mackay_logprob(batch_labels, f_xμ, all_samples_lin_pred):
     ll = py_xs[jnp.arange(batch_labels.shape[0]), batch_labels]  # (B,)
     return ll
 
-
 def mc_logprob(batch_labels, f_xμ, all_samples_lin_pred):
     """
     batch_labels  (B,)
@@ -859,6 +858,10 @@ def create_sampled_laplace_prediction(
 
         # all_samples_logits is repeated along the K dimension, take 0th axis
         f_xμ = all_samples_logits[0]
+        marginal_variances = jnp.mean(jnp.power(all_samples_lin_pred, 2), axis=0)
+        κ = 1 / jnp.sqrt(1 + jnp.pi * 0.125 * marginal_variances)  # (B, O)
+        py_xs = jax.nn.log_softmax(f_xμ * κ, axis=1)  # (B, O)
+
 
         if method == "gibbs":
             ll = gibbs_mackay_logprob(batch_labels, f_xμ, all_samples_lin_pred)  # B, O
@@ -867,15 +870,17 @@ def create_sampled_laplace_prediction(
         elif method == "dyadic":
             ll = dyadic_mc_joint_logprob(batch_labels, f_xμ, all_samples_lin_pred, rng)
 
+        acc = jax.numpy.argmax(py_xs, -1) == batch_labels
         batch_metrics = {
             "ll": ll,
+            "acc": acc
         }
 
         agg = get_agg_fn(aggregate)
 
         batch_metrics = jax.tree_map(lambda x: agg(x, axis=0), batch_metrics)
 
-        return batch_metrics
+        return batch_metrics#, (py_xs, batch_labels)
 
     return jax.jit(batched_predict_fn)
 

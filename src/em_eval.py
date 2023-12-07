@@ -90,7 +90,7 @@ def main(config):
 
             if config.eval_dataset == "corrupted":
                 severity = [0, 1, 2, 3, 4, 5]
-                corruption_type = [0,1,2,3,4,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]
+                corruption_type = [0,1,2,3,4,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18]
                 load_dataset_fn = load_corrupted_dataset
             elif config.eval_dataset == "original":
                 severity = [0]
@@ -108,7 +108,7 @@ def main(config):
             # Create parallel version of the train and eval step
             p_predict_step = jax.pmap(predict_step, "device")
             state = state.replicate()
-
+            metrics = {}
             for s in severity:
                 for t in corruption_type:
                     split_loader, split_dataset = load_dataset_fn(
@@ -138,7 +138,11 @@ def main(config):
                             aux_log_dict={"severity": s, "type": t, "em_step": em_step},
                             rng=jax.random.PRNGKey(s),
                         )
-                        print(predict_metrics)
+
+                        metrics = {
+                            **metrics,
+                            **{k: v.item() for k, v in predict_metrics.items()}
+                        }
                     elif config.method == "map":
                         predict_metrics = eval_epoch(
                             eval_step_fn=p_predict_step,
@@ -159,6 +163,17 @@ def main(config):
             if config.method == "map":
                 # We don't need to run for N EM steps, can break after 1st loop.
                 break
+
+
+            import pandas as pd
+            df = pd.DataFrame.from_dict(metrics, orient="index").transpose()
+
+            print(df)
+
+            df.to_csv(
+                path_or_buf="results/" + config.model_name + ".csv",
+                encoding="utf-8",
+            )
 
 
 if __name__ == "__main__":

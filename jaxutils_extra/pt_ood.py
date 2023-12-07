@@ -157,26 +157,25 @@ def load_corrupted_dataset(
                 dname, data_dir, flatten_img=False, val_percent=0.,
                 random_seed=0, perform_augmentations=False)
         elif severity in [1, 2, 3 ,4, 5]:
-
-            path =  os.listdir(data_dir / 'CIFAR-10-C')
+            path =  data_dir / 'CIFAR-10-C'
             if not os.path.exists(path):
                 print("Corrupted Data doesn't exist. Downloading...")
-                wget.download("https://zenodo.org/records/2535967/files/CIFAR-10-C.tar?download=1", out=data_dir)
-                with tarfile.open(data_dir / 'CIFAR-10-C.tar', 'r') as tar:
+                wget.download("https://zenodo.org/records/2535967/files/CIFAR-10-C.tar?download=1", out=str(data_dir))
+                with tarfile.open(str(data_dir / 'CIFAR-10-C.tar'), 'r') as tar:
                     tar.extractall(path)
                 print("Corrupted data prepared")
 
-            corrupted_data_files = os.listdir(data_dir / 'CIFAR-10-C')
+            corrupted_data_files = os.listdir(data_dir / 'CIFAR-10-C/CIFAR-10-C')
             corrupted_data_files.remove('labels.npy')
 
             if 'README.txt' in corrupted_data_files:
                 corrupted_data_files.remove('README.txt')
 
             corrupted_data_file = corrupted_data_files[corruption_type]
-            map = np.lib.format.open_memmap(corrupted_data_files+ "/" + corrupted_data_file, mode='r+')
+            map = np.lib.format.open_memmap(str(data_dir / 'CIFAR-10-C/CIFAR-10-C')+ "/" + corrupted_data_file, mode='r+')
             subset = map[severity*10000:(severity+1)*10000]
 
-            y_file = data_dir / 'CIFAR-10-C/labels.npy'
+            y_file = data_dir / 'CIFAR-10-C/CIFAR-10-C/labels.npy'
             np_y = np.load(y_file).astype(np.int64)
             dataset = DatafeedImage(subset, np_y, transform_dict[dname])
     
