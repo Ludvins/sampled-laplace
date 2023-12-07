@@ -15,7 +15,7 @@ def get_config():
     # Dataset Configs
     config.dataset_type = "pytorch"
     config.eval_dataset = "original"
-    config.method = "map"  # "map"
+    config.method = "sampled_laplace"  # "map"
 
     config.dataset = ml_collections.ConfigDict()
     config.dataset.dataset_name = "CIFAR10"
@@ -46,7 +46,7 @@ def get_config():
     config.model.num_classes = config.dataset.num_classes
     config.model.initial_conv = "1x3"
 
-    config.checkpoint_dir = "./CIFAR10/g1000_fn_8samples"
+    config.checkpoint_dir = "./CIFAR10/" + config.model_name + "/" + "g1000_fn_8samples" 
 
     ##################### EM Step Configs #####################
     config.num_em_steps = 8
@@ -62,13 +62,7 @@ def get_config():
     # Wandb Configs
     config.wandb = ml_collections.ConfigDict()
     config.wandb.log = False
-    config.wandb.load_model = False
-    config.wandb.project = "sampled-laplace"
-    config.wandb.entity = "cbl-mlg"
-    config.wandb.model_artifact_name = "cifar100_eval"
-    config.wandb.artifact_name = "cifar100_sto"
-    config.wandb.log_params = False
-    config.wandb.params_log_interval = -1
-    config.wandb.code_dir = "/home/shreyaspadhy_gmail_com/linearised-NNs"
-
+    config.wandb.project = "linearised-NNs"
+    config.wandb.entity = "-"
+    config.wandb.code_dir = "./linearised-NNs"
     return config

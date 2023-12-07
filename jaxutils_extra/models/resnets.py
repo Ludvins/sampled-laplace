@@ -14,6 +14,7 @@ class ResNetBlock(nn.Module):
     filters: int
     conv: ModuleDef
     norm: ModuleDef
+    downsample: bool
     act: Callable
     strides: Tuple[int, int] = (1, 1)
 
@@ -33,7 +34,7 @@ class ResNetBlock(nn.Module):
         # For pretrained bayesian-lottery-tickets models, don't init with 0 here.
         y = self.norm()(y)
 
-        if residual.shape != y.shape:
+        if self.downsample:
             residual = self.conv(self.filters, (1, 1), self.strides, name="conv_proj")(
                 residual
             )
@@ -49,6 +50,7 @@ class BottleneckResNetBlock(nn.Module):
     conv: ModuleDef
     norm: ModuleDef
     act: Callable
+    downsample : bool
     strides: Tuple[int, int] = (1, 1)
 
     @nn.compact
@@ -64,7 +66,7 @@ class BottleneckResNetBlock(nn.Module):
         y = self.conv(self.filters * 4, (1, 1))(y)
         y = self.norm(scale_init=nn.initializers.zeros)(y)
 
-        if residual.shape != y.shape:
+        if self.downsample:
             residual = self.conv(
                 self.filters * 4, (1, 1), self.strides, name="conv_proj"
             )(residual)
@@ -120,11 +122,13 @@ class ResNet(nn.Module):
 
         for i, block_size in enumerate(self.stage_sizes):
             for j in range(block_size):
+                downsample = i > 0 and j == 0
                 strides = (2, 2) if i > 0 and j == 0 else (1, 1)
                 x = self.block_cls(
                     self.num_filters * 2**i,
                     strides=strides,
                     conv=conv,
+                    downsample = downsample,
                     norm=norm,
                     act=self.act,
                 )(x)
@@ -139,5 +143,14 @@ class ResNet(nn.Module):
 ResNet18 = partial(ResNet, stage_sizes=[2, 2, 2, 2],
                    block_cls=ResNetBlock)
 
-ResNet20 = partial(ResNet, stage_sizes=[3, 3, 3], num_filters=16,
+resnet20 = partial(ResNet, stage_sizes=[3, 3, 3], num_filters=16,
+                   block_cls=ResNetBlock)
+
+resnet32 = partial(ResNet, stage_sizes=[5, 5, 5], num_filters=16,
+                   block_cls=ResNetBlock)
+
+resnet44 = partial(ResNet, stage_sizes=[7, 7, 7], num_filters=16,
+                   block_cls=ResNetBlock)
+
+resnet56 = partial(ResNet, stage_sizes=[9, 9, 9], num_filters=16,
                    block_cls=ResNetBlock)

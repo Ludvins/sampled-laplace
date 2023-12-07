@@ -206,9 +206,9 @@ def main(config):
         ################# Load from checkpoint ################################
         from jaxutils_extra.models.resnet_torch_cifar import get_resnet
         from jaxutils_extra.models.convert_utils_torch_cifar import convert_model
-        model_torch = get_resnet("resnet20", 10)
+        model_torch = get_resnet(config.model_name, 10)
 
-        new_params_pytree = convert_model("resnet20", model_torch, variables)
+        new_params_pytree = convert_model(config.model_name, model_torch, variables)
         state, params = flax.core.pop(new_params_pytree, 'params')
 
         #state, params = new_params_pytree.pop('params')

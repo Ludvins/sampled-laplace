@@ -68,11 +68,9 @@ def main(config):
         ################# Load from checkpoint ################################
         # checkpoint_dir = checkpoint_dir / "w_samples"
         em_steps = jnp.arange(config.num_em_steps)
-        for em_step in em_steps:
-            print(em_step)
+        for em_step in em_steps[-1:]:
             checkpoint_dir = Path(config.checkpoint_dir).resolve()
             checkpoint_dir = checkpoint_dir / f"em_{em_step}" / "w_samples"
-            print(f"checkpoint_dir: {checkpoint_dir}")
             checkpoint_path = checkpoints.latest_checkpoint(checkpoint_dir)
             restored_state = checkpoints.restore_checkpoint(
                 checkpoint_path, target=None
@@ -90,14 +88,13 @@ def main(config):
                 scale_vec=restored_state["scale_vec"],
             )
 
-            if config.eval_dataset == "rotated":
-                datasplits = [0, 15, 30, 45, 60, 75, 90, 120, 150, 180]
-                load_dataset_fn = load_rotated_dataset
-            elif config.eval_dataset == "corrupted":
-                datasplits = [0, 1, 2, 3, 4, 5]
+            if config.eval_dataset == "corrupted":
+                severity = [0, 1, 2, 3, 4, 5]
+                corruption_type = [0,1,2,3,4,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]
                 load_dataset_fn = load_corrupted_dataset
             elif config.eval_dataset == "original":
-                datasplits = [0]
+                severity = [0]
+                corruption_type = [0]
                 load_dataset_fn = load_corrupted_dataset
 
             prediction_method = config.sampling.get("prediction_method", "gibbs")
@@ -112,48 +109,53 @@ def main(config):
             p_predict_step = jax.pmap(predict_step, "device")
             state = state.replicate()
 
-            for split in datasplits:
-                split_loader, split_dataset = load_dataset_fn(
-                    config.dataset.dataset_name,
-                    split,
-                    config.dataset.data_dir,
-                    batch_size=config.sampling.eval_process_batch_size,
-                    num_workers=config.dataset.num_workers,
-                )
-
-                n_dataset = len(split_dataset)
-                steps_per_epoch = len(split_loader)
-
-                if config.method == "sampled_laplace":
-                    _, predict_metrics = eval_sampled_laplace_epoch(
-                        predict_step_fn=p_predict_step,
-                        data_iterator=get_agnostic_iterator(
-                            split_loader, config.dataset_type
-                        ),
-                        steps_per_epoch=steps_per_epoch,
-                        num_points=n_dataset,
-                        state=state,
-                        wandb_run=run,
-                        eval_log_prefix=f"split_{split}",
-                        dataset_type=config.dataset_type,
-                        aux_log_dict={"split": split, "em_step": em_step},
-                        rng=jax.random.PRNGKey(split),
+            for s in severity:
+                for t in corruption_type:
+                    split_loader, split_dataset = load_dataset_fn(
+                        config.dataset.dataset_name,
+                        s,
+                        t,
+                        config.dataset.data_dir,
+                        batch_size=config.sampling.eval_process_batch_size,
+                        num_workers=config.dataset.num_workers,
                     )
-                    print(predict_metrics)
-                elif config.method == "map":
-                    predict_metrics = eval_epoch(
-                        eval_step_fn=p_predict_step,
-                        data_iterator=get_agnostic_iterator(
-                            split_loader, config.dataset_type
-                        ),
-                        steps_per_epoch=steps_per_epoch,
-                        num_points=n_dataset,
-                        state=state,
-                        wandb_run=run,
-                        log_prefix=f"split_{split}",
-                        dataset_type=config.dataset_type,
-                    )
-                    print(predict_metrics)
+
+                    n_dataset = len(split_dataset)
+                    steps_per_epoch = len(split_loader)
+
+                    if config.method == "sampled_laplace":
+                        _, predict_metrics = eval_sampled_laplace_epoch(
+                            predict_step_fn=p_predict_step,
+                            data_iterator=get_agnostic_iterator(
+                                split_loader, config.dataset_type
+                            ),
+                            steps_per_epoch=steps_per_epoch,
+                            num_points=n_dataset,
+                            state=state,
+                            wandb_run=run,
+                            eval_log_prefix=f"severity_{s}_type_{t}",
+                            dataset_type=config.dataset_type,
+                            aux_log_dict={"severity": s, "type": t, "em_step": em_step},
+                            rng=jax.random.PRNGKey(s),
+                        )
+                        print(predict_metrics)
+                    elif config.method == "map":
+                        predict_metrics = eval_epoch(
+                            eval_step_fn=p_predict_step,
+                            data_iterator=get_agnostic_iterator(
+                                split_loader, config.dataset_type
+                            ),
+                            steps_per_epoch=steps_per_epoch,
+                            num_points=n_dataset,
+                            state=state,
+                            wandb_run=run,
+                            log_prefix=f"severity_{s}_type_{t}",
+                            dataset_type=config.dataset_type,
+                        )
+                        print(predict_metrics)
+
+                    if s == 0:
+                        break
             if config.method == "map":
                 # We don't need to run for N EM steps, can break after 1st loop.
                 break

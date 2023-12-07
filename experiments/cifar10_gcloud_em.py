@@ -44,16 +44,16 @@ def get_config():
         config.dataset[key] = METADATA[key][config.dataset.dataset_name]
 
     # Model Configs
-    config.model_name = "ResNet20"
+    config.model_name = "resnet32"
     config.model = ml_collections.ConfigDict()
     config.model.num_classes = config.dataset.num_classes
     config.model.initial_conv = "1x3"
 
-    config.checkpoint_dir = "./converted_models/cifar10/0"
-    config.save_dir = "./CIFAR10/g1000_fn_8samples"
+    config.checkpoint_dir = "./converted_models/cifar10/" + config.model_name
+    config.save_dir = "./CIFAR10/" + config.model_name + "/" + "g1000_fn_8samples" 
 
     ##################### EM Step Configs #####################
-    config.num_em_steps = 10
+    config.num_em_steps = 8
 
     ###################### Linear Mode Evaluation Configs ####################
     config.linear = ml_collections.ConfigDict()
@@ -110,10 +110,10 @@ def get_config():
         config.prior_prec = 10000.0
 
     config.sampling.target_samples_path = (
-        "./CIFAR10/0/target_samples.h5"
+        "./CIFAR10/"  + config.model_name + "/" + "target_samples.h5"
     )
     config.sampling.ggn_matrix_path = (
-        "./CIFAR10/0/H.npy"
+        "./CIFAR10/"  + config.model_name + "/" + "H.npy"
     )
 
     config.sampling.num_samples = 6

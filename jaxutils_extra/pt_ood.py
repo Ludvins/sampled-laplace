@@ -1,4 +1,7 @@
 import numpy as np
+import os
+import wget
+import tarfile
 
 import torch
 from torchvision import datasets, transforms
@@ -100,13 +103,14 @@ def load_rotated_dataset(
 
 def load_corrupted_dataset(
     dname: str,
-    severity: float,
+    severity: int,
+    corruption_type: int,
     data_dir: str,
     batch_size: int = 256,
     num_workers: int = 4,
     n_data = None,
     subset_idx: int = -1):
-    assert dname in ['CIFAR10', 'CIFAR100', 'Imagenet']
+    assert dname in ['CIFAR10']
     data_dir = Path(data_dir)
 
     transform_dict = {
@@ -133,19 +137,49 @@ def load_corrupted_dataset(
         ]),
     }
 
-    if severity == 0:
-        # Return the original test set
-        _, dataset, _ = get_image_dataset(
-            dname, data_dir, flatten_img=False, val_percent=0.,
-            random_seed=0, perform_augmentations=False)
-    elif severity in [1, 2, 3 ,4, 5]:
-        if dname == 'CIFAR100':
+    if dname == 'CIFAR100':
+        if severity == 0:
+            # Return the original test set
+            _, dataset, _ = get_image_dataset(
+                dname, data_dir, flatten_img=False, val_percent=0.,
+                random_seed=0, perform_augmentations=False)
+        elif severity in [1, 2, 3 ,4, 5]:
             x_file = data_dir / ('CIFAR-100-C/CIFAR100_c%d.npy' % severity)
             np_x = np.load(x_file)
             y_file = data_dir / 'CIFAR-100-C/CIFAR100_c_labels.npy'
             np_y = np.load(y_file).astype(np.int64)
             dataset = DatafeedImage(np_x, np_y, transform_dict[dname])
+    
+    elif dname == "CIFAR10":
+        if severity == 0:
+            # Return the original test set
+            _, dataset, _ = get_image_dataset(
+                dname, data_dir, flatten_img=False, val_percent=0.,
+                random_seed=0, perform_augmentations=False)
+        elif severity in [1, 2, 3 ,4, 5]:
 
+            path =  os.listdir(data_dir / 'CIFAR-10-C')
+            if not os.path.exists(path):
+                print("Corrupted Data doesn't exist. Downloading...")
+                wget.download("https://zenodo.org/records/2535967/files/CIFAR-10-C.tar?download=1", out=data_dir)
+                with tarfile.open(data_dir / 'CIFAR-10-C.tar', 'r') as tar:
+                    tar.extractall(path)
+                print("Corrupted data prepared")
+
+            corrupted_data_files = os.listdir(data_dir / 'CIFAR-10-C')
+            corrupted_data_files.remove('labels.npy')
+
+            if 'README.txt' in corrupted_data_files:
+                corrupted_data_files.remove('README.txt')
+
+            corrupted_data_file = corrupted_data_files[corruption_type]
+            map = np.lib.format.open_memmap(corrupted_data_files+ "/" + corrupted_data_file, mode='r+')
+            subset = map[severity*10000:(severity+1)*10000]
+
+            y_file = data_dir / 'CIFAR-10-C/labels.npy'
+            np_y = np.load(y_file).astype(np.int64)
+            dataset = DatafeedImage(subset, np_y, transform_dict[dname])
+    
     loader = NumpyLoader(
         dataset,
         batch_size=batch_size, 

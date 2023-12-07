@@ -32,6 +32,15 @@ def convert_resnet_param_keys(pytorch_name, model_name="resnet18"):
     elif model_name == "resnet20":
         block_name = "ResNetBlock"
         layer_list = [3, 3, 3]
+    elif model_name == "resnet32":
+        block_name = "ResNetBlock"
+        layer_list = [5, 5, 5]
+    elif model_name == "resnet44":
+        block_name = "ResNetBlock"
+        layer_list = [7, 7, 7]
+    elif model_name == "resnet56":
+        block_name = "ResNetBlock"
+        layer_list = [9, 9, 9]
     else:
         raise NotImplementedError("Only resnet18 implemented for now.")
 
@@ -71,7 +80,7 @@ def convert_resnet_param_keys(pytorch_name, model_name="resnet18"):
 
         return (
             "params",
-            f"{block_name}_{str((int(split[0][-1])-1)*len(layer_list) + int(split[1]))}",
+            f"{block_name}_{str((int(split[0][-1])-1)*layer_list[int(split[0][-1])-1] + int(split[1]))}",
             f"Conv_{int(split[2][-1]) - 1}",
             "kernel",
         )
@@ -89,7 +98,7 @@ def convert_resnet_param_keys(pytorch_name, model_name="resnet18"):
 
         return (
             "params" if split[3] in ["weight", "bias"] else "batch_stats",
-            f"{block_name}_{str((int(split[0][-1])-1)*len(layer_list) + int(split[1]))}",
+            f"{block_name}_{str((int(split[0][-1])-1)*layer_list[int(split[0][-1])-1] + int(split[1]))}",
             f"BatchNorm_{int(split[2][-1]) - 1}",
             BN_MAP[split[3]],
         )
@@ -108,7 +117,7 @@ def convert_resnet_param_keys(pytorch_name, model_name="resnet18"):
             logging.warning(f"{pytorch_name} is not a valid key for BLT models")
             return None
 
-        return ("params", f"{block_name}_{str((int(split[0][-1])-1)*len(layer_list) + int(split[1]))}",
+        return ("params", f"{block_name}_{str((int(split[0][-1])-1)*layer_list[int(split[0][-1])-1] + int(split[1]))}",
                  "conv_proj", "kernel")
 
     # layer{i}.{j}.downsample.1.{weight|bias|running_mean|running_var} -> 
@@ -126,7 +135,7 @@ def convert_resnet_param_keys(pytorch_name, model_name="resnet18"):
 
         return (
             "params" if split[4] in ["weight", "bias"] else "batch_stats",
-            f"{block_name}_{str((int(split[0][-1])-1)*len(layer_list) + int(split[1]))}",
+            f"{block_name}_{str((int(split[0][-1])-1)*layer_list[int(split[0][-1])-1] + int(split[1]))}",
             "norm_proj",
             BN_MAP[split[4]],
         )
@@ -144,7 +153,7 @@ def convert_model(
     # TODO: Add a check that params is frozen and not flat, and not repeat
     jax_params = flatten_dict(unfreeze(jax_params))
 
-    if model_name in ["resnet18", "resnet20"]:
+    if model_name in ["resnet18", "resnet20", "resnet32", "resnet44", "resnet56"]:
         convert_keys = convert_resnet_param_keys
     else:
         raise NotImplementedError(f"{model_name} conversion not implemented yet.")
@@ -160,6 +169,8 @@ def convert_model(
         else:
             # Pytorch # [outC, inC, kH, kW] -> Jax [kH, kW, inC, outC]
             converted_jax_params[key] = param.numpy().transpose((2, 3, 1, 0))
+        print(key)
+        print(convert_keys(key, model_name))
 
     new_jax_params = {
         key: converted_jax_params[jax_to_pytorch_keys[key]] for key in jax_params.keys()
