@@ -14,8 +14,13 @@ To run stochastic EM for a linearised Laplace model using the ResNet architectur
 python src/em_trainer.py --config experiments/cifar10_gcloud_em.py
 ```
 
-For getting results metrics do:
+To compute the last EM step with an increased number of samples do:
 
+```bash
+python src/em_trainer.py --config experiments/cifar10_gcloud_last_em.py
+```
+
+For getting results metrics do:
 
 ```bash
 python src/em_eval.py --config experiments/cifar10_gcloud_eval.py

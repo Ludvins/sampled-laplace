@@ -862,6 +862,11 @@ def create_sampled_laplace_prediction(
         κ = 1 / jnp.sqrt(1 + jnp.pi * 0.125 * marginal_variances)  # (B, O)
         py_xs = jax.nn.log_softmax(f_xμ * κ, axis=1)  # (B, O)
 
+        logit_samples = f_xμ[None, :, :] + all_samples_lin_pred  # (K, B, O)
+        class_sample_logprobs = jax.nn.log_softmax(logit_samples, axis=2)  # (K, B, O)
+        py_xs = logsumexp(class_sample_logprobs, axis=0) - jnp.log(
+            class_sample_logprobs.shape[0]
+        )  # (B, O)
 
         if method == "gibbs":
             ll = gibbs_mackay_logprob(batch_labels, f_xμ, all_samples_lin_pred)  # B, O
@@ -879,8 +884,7 @@ def create_sampled_laplace_prediction(
         agg = get_agg_fn(aggregate)
 
         batch_metrics = jax.tree_map(lambda x: agg(x, axis=0), batch_metrics)
-
-        return batch_metrics#, (py_xs, batch_labels)
+        return batch_metrics, (py_xs, batch_labels)
 
     return jax.jit(batched_predict_fn)
 
@@ -899,10 +903,10 @@ def create_sampling_prediction_step(model, prediction_method):
             rng=batch_rng,
         )
 
-        eval_metrics = predict_fn(state.w_samples, state.params, state.model_state)
+        eval_metrics, (py_xs, batch_labels) = predict_fn(state.w_samples, state.params, state.model_state)
 
         eval_metrics = jax.lax.pmean(eval_metrics, "device")
 
-        return eval_metrics
+        return eval_metrics,  (py_xs, batch_labels)
 
     return eval_step

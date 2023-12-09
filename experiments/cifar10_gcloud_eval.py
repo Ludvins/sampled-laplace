@@ -14,8 +14,8 @@ def get_config():
 
     # Dataset Configs
     config.dataset_type = "pytorch"
-    config.eval_dataset = "corrupted"
-    config.method = "sampled_laplace"# "sampled_laplace"  # "map"
+    config.eval_dataset = "original" # "corrupted" or "original"
+    config.method = "sampled_laplace"# "sampled_laplace" or "map"
 
     config.dataset = ml_collections.ConfigDict()
     config.dataset.dataset_name = "CIFAR10"
@@ -41,20 +41,21 @@ def get_config():
         config.dataset[key] = METADATA[key][config.dataset.dataset_name]
 
     # Model Configs
-    config.model_name = "resnet20"
+    config.model_name = "resnet44"
     config.model = ml_collections.ConfigDict()
     config.model.num_classes = config.dataset.num_classes
     config.model.initial_conv = "1x3"
 
-    config.checkpoint_dir = "./CIFAR10/" + config.model_name + "/" + "g1000_fn_8samples" 
+    config.checkpoint_dir = "./CIFAR10/" + config.model_name + "/" + str(config.model_seed) + "/last_samples"
 
     ##################### EM Step Configs #####################
-    config.num_em_steps = 8
+    config.num_em_steps = 1
+    config.num_samples = 64
 
     ######################## Sample-then-Optimise Configs #####################
     config.sampling = ml_collections.ConfigDict()
 
-    config.sampling.prediction_method = "gibbs"
+    config.sampling.prediction_method = "mc"
 
     # Training Configs
     config.sampling.eval_process_batch_size = 200  # 10000/125

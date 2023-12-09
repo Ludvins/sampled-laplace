@@ -13,6 +13,8 @@ from flax import linen as nn
 from flax.jax_utils import unreplicate
 from flax.training import checkpoints
 from tqdm import trange
+import numpy as np
+
 
 import jaxutils_extra.models as models
 import wandb
@@ -223,7 +225,13 @@ def main(config):
         # restored_state = checkpoints.restore_checkpoint(checkpoint_path, target=None)
 
         ################## Setup EM Step ######################################
-        λ = config.prior_prec
+        if config.load_last_prior_prec:
+            λ = np.loadtxt(str(config.prior_save_dir))[-1]
+            print("Loading prior precision from ", str(config.prior_save_dir), ": ", λ)
+
+        else:
+            λ = config.prior_prec
+
         if config.sampling.compute_exact_w_samples:
             exact_λ, exact_sam_λ = config.prior_prec, config.prior_prec
             run.log(
@@ -378,6 +386,7 @@ def main(config):
             # Initialise at zeroes.
             init_w_samples = jax.tree_map(lambda w: jnp.zeros_like(w), w0s_prior)
 
+        λs = [λ]
         ######################### PERFORM EM STEPS #############################
         for em_step in range(config.num_em_steps):
 
@@ -598,6 +607,9 @@ def main(config):
 
             # Update λ and w0s
             λ = new_λ
+            λs.append(λ)
+            print(f"EM step: {em_step}, λ: {λ}")
+           
             if config.sampling.compute_exact_w_samples:
                 exact_λ = exact_new_λ
                 exact_sam_λ = exact_sam_new_λ
@@ -605,7 +617,9 @@ def main(config):
             w0s = new_w0s
 
             del new_w0s, w_lin_state, w_samples_state
-
+        
+        if not config.load_last_prior_prec:
+            np.savetxt(str(config.prior_save_dir), λs)
 
 def optimise_linear_MAP(
     model: nn.Module,

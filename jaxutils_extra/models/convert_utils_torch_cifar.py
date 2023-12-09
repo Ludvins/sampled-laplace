@@ -169,9 +169,6 @@ def convert_model(
         else:
             # Pytorch # [outC, inC, kH, kW] -> Jax [kH, kW, inC, outC]
             converted_jax_params[key] = param.numpy().transpose((2, 3, 1, 0))
-        print(key)
-        print(convert_keys(key, model_name))
-
     new_jax_params = {
         key: converted_jax_params[jax_to_pytorch_keys[key]] for key in jax_params.keys()
     }

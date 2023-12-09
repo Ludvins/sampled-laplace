@@ -7,6 +7,7 @@ import jax.random as random
 import ml_collections.config_flags
 import torch
 from absl import app, flags
+from tensorflow_probability.substrates.jax.stats import expected_calibration_error
 from flax.training import checkpoints
 
 import jaxutils_extra.models as models
@@ -71,6 +72,7 @@ def main(config):
         for em_step in em_steps[-1:]:
             checkpoint_dir = Path(config.checkpoint_dir).resolve()
             checkpoint_dir = checkpoint_dir / f"em_{em_step}" / "w_samples"
+            print(checkpoint_dir)
             checkpoint_path = checkpoints.latest_checkpoint(checkpoint_dir)
             restored_state = checkpoints.restore_checkpoint(
                 checkpoint_path, target=None
@@ -124,7 +126,7 @@ def main(config):
                     steps_per_epoch = len(split_loader)
 
                     if config.method == "sampled_laplace":
-                        _, predict_metrics = eval_sampled_laplace_epoch(
+                        _, predict_metrics, preds, labels = eval_sampled_laplace_epoch(
                             predict_step_fn=p_predict_step,
                             data_iterator=get_agnostic_iterator(
                                 split_loader, config.dataset_type
@@ -138,10 +140,20 @@ def main(config):
                             aux_log_dict={"severity": s, "type": t, "em_step": em_step},
                             rng=jax.random.PRNGKey(s),
                         )
+                        l = []
+                        p = []
+                        for i in range(len(labels)):
+                            for j in range(len(labels[0])):
+                                l.append(labels[i][j])
+                                p.append(preds[i][j])
+                        labels = jax.numpy.concatenate(l)
+                        preds = jax.numpy.concatenate(p)
 
+                        ece = expected_calibration_error(15, preds, labels)
                         metrics = {
                             **metrics,
-                            **{k: v.item() for k, v in predict_metrics.items()}
+                            **{k: v.item() for k, v in predict_metrics.items()},
+                            **{f"severity_{s}_type_{t}/ece": ece}
                         }
                     elif config.method == "map":
                         predict_metrics = eval_epoch(

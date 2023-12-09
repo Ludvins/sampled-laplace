@@ -50,12 +50,12 @@ def get_config():
     config.model.initial_conv = "1x3"
 
     config.checkpoint_dir = "./converted_models/cifar10/" + config.model_name + "/" + str(config.model_seed) 
-    config.save_dir = "./CIFAR10/" + config.model_name + "/" + str(config.model_seed) + "/samples"
+    config.save_dir = "./CIFAR10/" + config.model_name + "/" + str(config.model_seed) + "/last_samples"
     config.prior_save_dir = "./CIFAR10/" + config.model_name + "/" + str(config.model_seed) + "/prior.txt"
 
     ##################### EM Step Configs #####################
-    config.num_em_steps = 8
-    config.load_last_prior_prec = False
+    config.num_em_steps = 1
+    config.load_last_prior_prec = True
 
     ###################### Linear Mode Evaluation Configs ####################
     config.linear = ml_collections.ConfigDict()
@@ -118,7 +118,7 @@ def get_config():
         "./CIFAR10/"  + config.model_name + "/" + str(config.model_seed) + "/H.npy"
     )
 
-    config.sampling.num_samples = 6
+    config.sampling.num_samples = 64
     config.sampling.H_L_jitter = 1e-6
 
     # Training Configs

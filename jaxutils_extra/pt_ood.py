@@ -173,7 +173,7 @@ def load_corrupted_dataset(
 
             corrupted_data_file = corrupted_data_files[corruption_type]
             map = np.lib.format.open_memmap(str(data_dir / 'CIFAR-10-C/CIFAR-10-C')+ "/" + corrupted_data_file, mode='r+')
-            subset = map[severity*10000:(severity+1)*10000]
+            subset = map[(severity-1)*10000:(severity)*10000]
 
             y_file = data_dir / 'CIFAR-10-C/CIFAR-10-C/labels.npy'
             np_y = np.load(y_file).astype(np.int64)

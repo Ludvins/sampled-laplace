@@ -159,6 +159,8 @@ def eval_sampled_laplace_epoch(
 ):
 
     eval_batch_metrics = []
+    eval_batch_labels = []
+    eval_batch_preds = []
     for i in range(steps_per_epoch):
         batch = get_agnostic_batch(next(data_iterator), dataset_type)
 
@@ -170,9 +172,11 @@ def eval_sampled_laplace_epoch(
         n_devices, B = batch[0].shape[:2]
         # NOTE: eval_step outputs values summed over batches_per_device but averaged
         # over num_devices, therefore we need to compensate when aggregating metrics
-        eval_metrics = predict_step_fn(
+        eval_metrics, (py_xs, batch_labels) = predict_step_fn(
             state, batch[0], batch[1], batch_rng=shard_prng_key(batch_rng)
         )
+        eval_batch_labels.append(batch_labels)
+        eval_batch_preds.append(py_xs)
 
         eval_metrics = unreplicate(eval_metrics)
         eval_batch_metrics.append(eval_metrics)
@@ -187,4 +191,4 @@ def eval_sampled_laplace_epoch(
     logging_dict = {**eval_metrics, **aux_log_dict} if aux_log_dict else eval_metrics
     wandb_run.log(logging_dict)
 
-    return state, eval_metrics
+    return state, eval_metrics, eval_batch_preds, eval_batch_labels
