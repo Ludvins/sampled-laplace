@@ -6,6 +6,7 @@ import jax.numpy as jnp
 import jax.random as random
 import ml_collections.config_flags
 import torch
+from tqdm import tqdm
 from absl import app, flags
 from tensorflow_probability.substrates.jax.stats import expected_calibration_error
 from flax.training import checkpoints
@@ -92,7 +93,7 @@ def main(config):
 
             if config.eval_dataset == "corrupted":
                 severity = [0, 1, 2, 3, 4, 5]
-                corruption_type = [0,1,2,3,4,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18]
+                corruption_type = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18]
                 load_dataset_fn = load_corrupted_dataset
             elif config.eval_dataset == "original":
                 severity = [0]
@@ -111,67 +112,69 @@ def main(config):
             p_predict_step = jax.pmap(predict_step, "device")
             state = state.replicate()
             metrics = {}
-            for s in severity:
-                for t in corruption_type:
-                    split_loader, split_dataset = load_dataset_fn(
-                        config.dataset.dataset_name,
-                        s,
-                        t,
-                        config.dataset.data_dir,
-                        batch_size=config.sampling.eval_process_batch_size,
-                        num_workers=config.dataset.num_workers,
-                    )
-
-                    n_dataset = len(split_dataset)
-                    steps_per_epoch = len(split_loader)
-
-                    if config.method == "sampled_laplace":
-                        _, predict_metrics, preds, labels = eval_sampled_laplace_epoch(
-                            predict_step_fn=p_predict_step,
-                            data_iterator=get_agnostic_iterator(
-                                split_loader, config.dataset_type
-                            ),
-                            steps_per_epoch=steps_per_epoch,
-                            num_points=n_dataset,
-                            state=state,
-                            wandb_run=run,
-                            eval_log_prefix=f"severity_{s}_type_{t}",
-                            dataset_type=config.dataset_type,
-                            aux_log_dict={"severity": s, "type": t, "em_step": em_step},
-                            rng=jax.random.PRNGKey(s),
+            with tqdm(total=(len(severity)-1)*len(corruption_type) + 1) as pbar:
+                for s in severity:
+                    for t in corruption_type:
+                        split_loader, split_dataset = load_dataset_fn(
+                            config.dataset.dataset_name,
+                            s,
+                            t,
+                            config.dataset.data_dir,
+                            batch_size=config.sampling.eval_process_batch_size,
+                            num_workers=config.dataset.num_workers,
                         )
-                        l = []
-                        p = []
-                        for i in range(len(labels)):
-                            for j in range(len(labels[0])):
-                                l.append(labels[i][j])
-                                p.append(preds[i][j])
-                        labels = jax.numpy.concatenate(l)
-                        preds = jax.numpy.concatenate(p)
 
-                        ece = expected_calibration_error(15, preds, labels)
-                        metrics = {
-                            **metrics,
-                            **{k: v.item() for k, v in predict_metrics.items()},
-                            **{f"severity_{s}_type_{t}/ece": ece}
-                        }
-                    elif config.method == "map":
-                        predict_metrics = eval_epoch(
-                            eval_step_fn=p_predict_step,
-                            data_iterator=get_agnostic_iterator(
-                                split_loader, config.dataset_type
-                            ),
-                            steps_per_epoch=steps_per_epoch,
-                            num_points=n_dataset,
-                            state=state,
-                            wandb_run=run,
-                            log_prefix=f"severity_{s}_type_{t}",
-                            dataset_type=config.dataset_type,
-                        )
-                        print(predict_metrics)
+                        n_dataset = len(split_dataset)
+                        steps_per_epoch = len(split_loader)
 
-                    if s == 0:
-                        break
+                        if config.method == "sampled_laplace":
+                            _, predict_metrics, preds, labels = eval_sampled_laplace_epoch(
+                                predict_step_fn=p_predict_step,
+                                data_iterator=get_agnostic_iterator(
+                                    split_loader, config.dataset_type
+                                ),
+                                steps_per_epoch=steps_per_epoch,
+                                num_points=n_dataset,
+                                state=state,
+                                wandb_run=run,
+                                eval_log_prefix=f"severity_{s}_type_{t}",
+                                dataset_type=config.dataset_type,
+                                aux_log_dict={"severity": s, "type": t, "em_step": em_step},
+                                rng=jax.random.PRNGKey(s),
+                            )
+                            l = []
+                            p = []
+                            for i in range(len(labels)):
+                                for j in range(len(labels[0])):
+                                    l.append(labels[i][j])
+                                    p.append(preds[i][j])
+                            labels = jax.numpy.concatenate(l)
+                            preds = jax.numpy.concatenate(p)
+
+                            ece = expected_calibration_error(15, preds, labels)
+                            metrics = {
+                                **metrics,
+                                **{k: v.item() for k, v in predict_metrics.items()},
+                                **{f"severity_{s}_type_{t}/ece": ece}
+                            }
+                        elif config.method == "map":
+                            predict_metrics = eval_epoch(
+                                eval_step_fn=p_predict_step,
+                                data_iterator=get_agnostic_iterator(
+                                    split_loader, config.dataset_type
+                                ),
+                                steps_per_epoch=steps_per_epoch,
+                                num_points=n_dataset,
+                                state=state,
+                                wandb_run=run,
+                                log_prefix=f"severity_{s}_type_{t}",
+                                dataset_type=config.dataset_type,
+                            )
+                            print(predict_metrics)
+
+                        if s == 0:
+                            break
+                        pbar.update(1)
             if config.method == "map":
                 # We don't need to run for N EM steps, can break after 1st loop.
                 break
@@ -183,7 +186,7 @@ def main(config):
             print(df)
 
             df.to_csv(
-                path_or_buf="results/" + config.model_name + ".csv",
+                path_or_buf="results/" + config.model_name + "_" + str(config.model_seed) + ".csv",
                 encoding="utf-8",
             )
 

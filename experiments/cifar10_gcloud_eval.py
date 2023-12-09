@@ -14,7 +14,7 @@ def get_config():
 
     # Dataset Configs
     config.dataset_type = "pytorch"
-    config.eval_dataset = "original" # "corrupted" or "original"
+    config.eval_dataset = "corrupted" # "corrupted" or "original"
     config.method = "sampled_laplace"# "sampled_laplace" or "map"
 
     config.dataset = ml_collections.ConfigDict()
@@ -41,7 +41,7 @@ def get_config():
         config.dataset[key] = METADATA[key][config.dataset.dataset_name]
 
     # Model Configs
-    config.model_name = "resnet44"
+    config.model_name = "resnet32"
     config.model = ml_collections.ConfigDict()
     config.model.num_classes = config.dataset.num_classes
     config.model.initial_conv = "1x3"
