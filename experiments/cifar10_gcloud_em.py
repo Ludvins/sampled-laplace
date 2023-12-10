@@ -44,7 +44,7 @@ def get_config():
         config.dataset[key] = METADATA[key][config.dataset.dataset_name]
 
     # Model Configs
-    config.model_name = "resnet56"
+    config.model_name = "resnet44"
     config.model = ml_collections.ConfigDict()
     config.model.num_classes = config.dataset.num_classes
     config.model.initial_conv = "1x3"

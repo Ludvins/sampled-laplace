@@ -10,7 +10,7 @@ def get_config():
     config = ml_collections.ConfigDict()
     config.use_tpu = True
     config.global_seed = 0
-    config.model_seed = 0
+    config.model_seed = 4
 
     # Dataset Configs
     config.dataset_type = "pytorch"
