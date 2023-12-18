@@ -145,6 +145,18 @@ def convert_resnet_param_keys(pytorch_name, model_name="resnet18"):
     if len(split) == 2 and split[0] == "fc":
         return ("params", "Dense_0", FC_MAP[split[1]])
 
+def convert_mlp_param_keys(pytorch_name, model_name="mlp_mnist"):
+    split = pytorch_name.split(".")
+    if len(split) == 2 and split[0] == "0":
+        return ("params", "dense1", FC_MAP[split[1]])
+
+    elif len(split) == 2 and split[0] == "3":
+        return ("params", "dense2", FC_MAP[split[1]])
+
+    elif len(split) == 2 and split[0] == "6":
+        return ("params", "dense3", FC_MAP[split[1]])
+
+
 
 def convert_model(
     model_name: str, pytorch_model: torch.nn.Module, jax_params: PyTree
@@ -155,6 +167,8 @@ def convert_model(
 
     if model_name in ["resnet18", "resnet20", "resnet32", "resnet44", "resnet56"]:
         convert_keys = convert_resnet_param_keys
+    elif model_name in ["mlp_mnist", "mlp_fmnist"]:
+        convert_keys = convert_mlp_param_keys
     else:
         raise NotImplementedError(f"{model_name} conversion not implemented yet.")
 

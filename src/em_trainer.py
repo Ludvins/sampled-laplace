@@ -195,8 +195,10 @@ def main(config):
 
         ################ Create and initialise model ##########################
         # Create and initialise model
+        print(config.model_name)
         model_cls = getattr(models, config.model_name)
         model = model_cls(**config.model.to_dict())
+        print(model)
 
         dummy_init = jnp.expand_dims(jnp.ones(config.dataset.image_shape), 0)
         variables = model.init(model_rng, dummy_init)
@@ -206,10 +208,17 @@ def main(config):
         #print(params)
 
         ################# Load from checkpoint ################################
-        from jaxutils_extra.models.resnet_torch_cifar import get_resnet
-        from jaxutils_extra.models.convert_utils_torch_cifar import convert_model
-        model_torch = get_resnet(config.model_name, 10)
+        if "mlp" in config.model_name:
+            from jaxutils_extra.models.mlp_torch import get_mlp
+            model_torch = get_mlp(config.model_name)
 
+        else: # Resnet
+            from jaxutils_extra.models.resnet_torch_cifar import get_resnet
+            model_torch = get_resnet(config.model_name, 10)
+        
+        from jaxutils_extra.models.convert_utils_torch_cifar import convert_model
+
+        print(model_torch)
         new_params_pytree = convert_model(config.model_name, model_torch, variables)
         state, params = flax.core.pop(new_params_pytree, 'params')
 
