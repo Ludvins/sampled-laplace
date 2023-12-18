@@ -834,7 +834,7 @@ if __name__ == "__main__":
         end = timer()
 
         print("TRAINING TIME: ", np.array(start-end))
-        np.savetxt(str(config.time_save_dir), np.array(end-start))
+        np.savetxt(str(config.time_save_dir), np.array(end-start, ndmin=1))
 
 
     app.run(_main)
