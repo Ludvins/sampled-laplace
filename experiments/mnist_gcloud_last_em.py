@@ -50,6 +50,7 @@ def get_config():
     config.checkpoint_dir = "./converted_models/mnist/" + config.model_name + "/" + str(config.model_seed) 
     config.save_dir = "./MNIST/" + config.model_name + "/" + str(config.model_seed) + "/last_samples"
     config.prior_save_dir = "./MNIST/" + config.model_name + "/" + str(config.model_seed) + "/prior.txt"
+    config.time_save_dir = "./MNIST/" + config.model_name + "/" + str(config.model_seed) + "/last_time.txt"
 
     ##################### EM Step Configs #####################
     config.num_em_steps = 1
