@@ -20,13 +20,13 @@ Features = Dict[str, Tensor]
 
 # Random augmentations should happen before normalisation.
 TRAIN_TRANSFORMATIONS = {
-    "MNIST": "random_crop_with_pad(28, 2)|value_range(0, 1)|normalize((0.1307,), (0.3081,))",
+    "MNIST": "random_crop_with_pad(28, 2)|value_range(0, 1)|normalize((0,), (1,))",
     "CIFAR100": "random_crop_with_pad(32, 4)|flip_lr|value_range(0, 1)|normalize((0.5071, 0.4866, 0.4409), (0.2673, 0.2564, 0.2762))",
     "CIFAR10": "random_crop_with_pad(32, 4)|flip_lr|value_range(0, 1)|normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))",
 
 }
 
-TEST_TRANSFORMATIONS = {"MNIST": "value_range(0, 1)|normalize((0.1307,), (0.3081,))",
+TEST_TRANSFORMATIONS = {"MNIST": "value_range(0, 1)|normalize((0,), (1,))",
                         "CIFAR100": "value_range(0, 1)|normalize((0.5071, 0.4866, 0.4409), (0.2673, 0.2564, 0.2762))",
                         "CIFAR10": "value_range(0, 1)|normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))"}
 

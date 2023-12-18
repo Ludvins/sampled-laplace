@@ -24,14 +24,14 @@ def load_rotated_dataset(
         'MNIST': transforms.Compose([
             transforms.ToTensor(),
             transforms.RandomRotation([angle, angle], resample=2, expand=False, center=None),
-            transforms.Normalize(mean=(0.1307,), std=(0.3081,)),
+            transforms.Normalize(mean=(0,), std=(1,)),
             ToNumpy(),
             MoveChannelDim(),
         ]),
         'Fashion': transforms.Compose([
             transforms.RandomRotation([angle, angle], resample=2, expand=False, center=None),
             transforms.ToTensor(),
-            transforms.Normalize(mean=(0.2860,), std=(0.3530,))
+            transforms.Normalize(mean=(0,), std=(1,))
         ]),
         'SVHN': transforms.Compose([
             transforms.RandomRotation([angle, angle], resample=2, expand=False, center=None),
