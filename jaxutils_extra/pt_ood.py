@@ -5,7 +5,7 @@ import tarfile
 
 import torch
 from torchvision import datasets, transforms
-
+from torchvision.transforms.functional import rotate
 from jaxutils_extra.pt_image import MoveChannelDim, ToNumpy, get_image_dataset
 from jaxutils.data.pt_preprocess import DatafeedImage, NumpyLoader
 from pathlib import Path
@@ -100,6 +100,44 @@ def load_rotated_dataset(
 
     return source_loader, source_dset
 
+def load_rotated_dataset(
+    dname: str, 
+    angle: float, 
+    data_dir: str, 
+    batch_size: int = 256, 
+    num_workers: int = 4, 
+    n_data = None, 
+    subset_idx: int = -1):
+
+    transform_dict = {
+        'MNIST': transforms.Compose([
+            transforms.ToTensor(),
+            ToNumpy(),
+            MoveChannelDim(),
+        ]),
+        'FMNIST': transforms.Compose([
+            transforms.ToTensor(),
+        ]),
+    }
+
+    dataset_dict = {
+        'MNIST': datasets.MNIST,
+        'FMNIST': datasets.FashionMNIST,
+    }
+
+    dset_kwargs = {
+        'root': data_dir,
+        'train': False,
+        'download': True,
+        'transform': transform_dict[dname]
+    }
+    source_dset = dataset_dict[dname](**dset_kwargs)
+    source_dset.data = rotate(source_dset.data/255., angle)
+
+    source_loader = NumpyLoader(
+        source_dset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
+
+    return source_loader, source_dset
 
 def load_corrupted_dataset(
     dname: str,

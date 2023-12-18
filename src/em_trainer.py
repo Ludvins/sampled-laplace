@@ -833,8 +833,8 @@ if __name__ == "__main__":
         main(config)
         end = timer()
 
-        print("TRAINING TIME: ", start-end)
-        np.savetxt(str(config.time_save_dir), start-end)
+        print("TRAINING TIME: ", np.array(start-end))
+        np.savetxt(str(config.time_save_dir), np.array(end-start))
 
 
     app.run(_main)

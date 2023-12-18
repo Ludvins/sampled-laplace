@@ -95,6 +95,10 @@ def main(config):
                 severity = [0, 1, 2, 3, 4, 5]
                 corruption_type = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18]
                 load_dataset_fn = load_corrupted_dataset
+            elif config.eval_dataset == "rotated":
+                severity = [0, 1]
+                corruption_type = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180]
+                load_dataset_fn = load_corrupted_dataset
             elif config.eval_dataset == "original":
                 severity = [0]
                 corruption_type = [0]

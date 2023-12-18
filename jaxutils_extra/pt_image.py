@@ -219,6 +219,13 @@ def get_image_dataset(
             root=data_dir,
         )
 
+    if dataset_name == "MNIST" or "FMNIST":
+        print(train_dataset.data)
+        input()
+        train_dataset.data = train_dataset.data/255.
+        test_dataset.data = test_dataset.data/255.
+
+
     if val_percent != 0.0:
         num_train, num_val = train_val_split_sizes(len(train_dataset), val_percent)
 
