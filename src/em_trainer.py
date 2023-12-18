@@ -13,6 +13,7 @@ from flax import linen as nn
 from flax.jax_utils import unreplicate
 from flax.training import checkpoints
 from tqdm import trange
+from time import process_time as timer
 import numpy as np
 
 
@@ -630,6 +631,8 @@ def main(config):
         if not config.load_last_prior_prec:
             np.savetxt(str(config.prior_save_dir), λs)
 
+        
+
 def optimise_linear_MAP(
     model: nn.Module,
     state: LinearTrainState,
@@ -826,6 +829,12 @@ if __name__ == "__main__":
     def _main(argv):
         del argv
         config = FLAGS.config
+        start = timer()
         main(config)
+        end = timer()
+
+        print("TRAINING TIME: ", start-end)
+        np.savetxt(str(config.time_save_dir), start-end)
+
 
     app.run(_main)

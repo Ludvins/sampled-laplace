@@ -6,7 +6,7 @@ from jaxutils.data.pt_image import METADATA
 
 
 def get_config():
-    """Config for training MLP on MNIST."""
+    """Config for training ResNet20 on CIFAR10."""
     config = ml_collections.ConfigDict()
 
     config.use_tpu = True
@@ -48,14 +48,12 @@ def get_config():
     config.model = ml_collections.ConfigDict()
 
     config.checkpoint_dir = "./converted_models/mnist/" + config.model_name + "/" + str(config.model_seed) 
-    config.save_dir = "./MNIST/" + config.model_name + "/" + str(config.model_seed) + "/samples"
+    config.save_dir = "./MNIST/" + config.model_name + "/" + str(config.model_seed) + "/last_samples"
     config.prior_save_dir = "./MNIST/" + config.model_name + "/" + str(config.model_seed) + "/prior.txt"
-    config.time_save_dir = "./MNIST/" + config.model_name + "/" + str(config.model_seed) + "/time.txt"
-
 
     ##################### EM Step Configs #####################
-    config.num_em_steps = 8
-    config.load_last_prior_prec = False
+    config.num_em_steps = 1
+    config.load_last_prior_prec = True
 
     ###################### Linear Mode Evaluation Configs ####################
     config.linear = ml_collections.ConfigDict()
@@ -118,7 +116,7 @@ def get_config():
         "./MNIST/"  + config.model_name + "/" + str(config.model_seed) + "/H.npy"
     )
 
-    config.sampling.num_samples = 6
+    config.sampling.num_samples = 64
     config.sampling.H_L_jitter = 1e-6
 
     # Training Configs
