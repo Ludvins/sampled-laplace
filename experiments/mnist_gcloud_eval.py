@@ -14,7 +14,7 @@ def get_config():
 
     # Dataset Configs
     config.dataset_type = "pytorch"
-    config.eval_dataset = "corrupted" # "corrupted" or "original"
+    config.eval_dataset = "original" # "corrupted" or "original"
     config.method = "sampled_laplace"# "sampled_laplace" or "map"
 
     config.dataset = ml_collections.ConfigDict()
@@ -53,7 +53,7 @@ def get_config():
     ######################## Sample-then-Optimise Configs #####################
     config.sampling = ml_collections.ConfigDict()
 
-    config.sampling.prediction_method = "mc"
+    config.sampling.prediction_method = "gibbs"
 
     # Training Configs
     config.sampling.eval_process_batch_size = 200  # 10000/125
