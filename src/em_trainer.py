@@ -177,6 +177,8 @@ def main(config):
             perform_augmentations=False,
         )
 
+
+
         train_config = {
             "n_train": num_examples[0],
             "n_val": num_examples[1],
@@ -219,7 +221,6 @@ def main(config):
         
         from jaxutils_extra.models.convert_utils_torch_cifar import convert_model
 
-        print(model_torch)
         new_params_pytree = convert_model(config.model_name, model_torch, variables)
         state, params = flax.core.pop(new_params_pytree, 'params')
 
@@ -468,6 +469,10 @@ def main(config):
             else:
                 # Use the online samples for subsequent calculations.
                 w_samples = w_samples_state.w_samples
+
+            
+            if config.load_last_prior_prec:
+                break
 
             ############# Update Prior Precision using Mackay Update ###########
             # Calculate Mackay update using K samples

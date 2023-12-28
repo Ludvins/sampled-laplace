@@ -10,7 +10,7 @@ from torchvision import datasets, transforms
 METADATA = {
     "image_shape": {
         "MNIST": (28, 28, 1),
-        "FashionMNIST": (28, 28, 1),
+        "FMNIST": (28, 28, 1),
         "KMNIST": (28, 28, 1),
         "SVHN": (32, 32, 3),
         "CIFAR10": (32, 32, 3),
@@ -19,7 +19,7 @@ METADATA = {
     },
     "num_train": {
         "MNIST": 60_000,
-        "FashionMNIST": 60_000,
+        "FMNIST": 60_000,
         "KMNIST": 60_000,
         "SVHN": 60_000,
         "CIFAR10": 60_000,
@@ -28,7 +28,7 @@ METADATA = {
     },
     "num_test": {
         "MNIST": 10_000,
-        "FashionMNIST": 10_000,
+        "FMNIST": 10_000,
         "KMNIST": 10_000,
         "SVHN": 10_000,
         "CIFAR10": 10_000,
@@ -37,7 +37,7 @@ METADATA = {
     },
     "num_classes": {
         "MNIST": 10,
-        "FashionMNIST": 10,
+        "FMNIST": 10,
         "KMNIST": 10,
         "SVHN": 10,
         "CIFAR10": 10,
@@ -45,8 +45,8 @@ METADATA = {
         "Imagenet": 1000,
     },
     "mean": {
-        "MNIST": (0,),
-        "FashionMNIST": (0,),
+        "MNIST": (0.,),
+        "FMNIST": (0.,),
         "SVHN": (0.4377, 0.4438, 0.4728),
         "CIFAR10": (0.4914, 0.4822, 0.4465),
         "CIFAR100": (0.5071, 0.4866, 0.4409),
@@ -54,9 +54,9 @@ METADATA = {
     },
     "std": {
         "MNIST": (1,),
-        "FashionMNIST": (1,),
+        "FMNIST": (1,),
         "SVHN": (0.1980, 0.2010, 0.1970),
-        "CIFAR10": (0.2023, 0.1994, 0.2010),
+        "CIFAR10": (0.2470, 0.2435, 0.2616),
         "CIFAR100": (0.2673, 0.2564, 0.2762),
         "Imagenet": (0.229, 0.224, 0.225),
     },
@@ -65,7 +65,7 @@ METADATA = {
 
 TRAIN_TRANSFORMATIONS = {
     "MNIST": [transforms.RandomCrop(28, padding=2)],
-    "FashionMNIST": [transforms.RandomCrop(28, padding=2)],
+    "FMNIST": [transforms.RandomCrop(28, padding=2)],
     "SVHN": [transforms.RandomCrop(32, padding=4)],
     "CIFAR10": [
         transforms.RandomCrop(32, padding=4),
@@ -80,7 +80,7 @@ TRAIN_TRANSFORMATIONS = {
 
 TEST_TRANSFORMATIONS = {
     "MNIST": [],
-    "FashionMNIST": [],
+    "FMNIST": [],
     "SVHN": [],
     "CIFAR10": [],
     "CIFAR100": [],
@@ -136,7 +136,7 @@ def get_image_dataset(
     """
     dataset_choices = [
         "MNIST",
-        "FashionMNIST",
+        "FMNIST",
         "SVHN",
         "CIFAR10",
         "CIFAR100",
@@ -149,7 +149,7 @@ def get_image_dataset(
         )
         raise RuntimeError(msg)
 
-    if dataset_name in ["MNIST", "FashionMNIST", "CIFAR10", "CIFAR100", "Imagenet"]:
+    if dataset_name in ["MNIST", "FMNIST", "CIFAR10", "CIFAR100", "Imagenet"]:
         train_kwargs = {"train": True}
         test_kwargs = {"train": False}
 
@@ -218,11 +218,6 @@ def get_image_dataset(
             download=True,
             root=data_dir,
         )
-
-    if dataset_name == "MNIST" or "FMNIST":
-        train_dataset.data = train_dataset.data/255.
-        test_dataset.data = test_dataset.data/255.
-
 
     if val_percent != 0.0:
         num_train, num_val = train_val_split_sizes(len(train_dataset), val_percent)

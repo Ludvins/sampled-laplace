@@ -2,7 +2,7 @@
 
 import ml_collections
 
-from jaxutils.data.pt_image import METADATA
+from jaxutils_extra.data.pt_image import METADATA
 
 
 def get_config():
@@ -20,7 +20,7 @@ def get_config():
     config.dataset_type = "tf"
 
     config.dataset = ml_collections.ConfigDict()
-    config.dataset.dataset_name = "MNIST"
+    config.dataset.dataset_name = "FMNIST"
     config.dataset.try_gcs = False
     if config.dataset_type == "tf" and config.dataset.try_gcs:
         config.dataset.data_dir = None
@@ -46,7 +46,7 @@ def get_config():
         config.dataset[key] = METADATA[key][config.dataset.dataset_name]
 
     # Model Configs
-    config.model_name = "mlp_mnist"
+    config.model_name = "mlp_fmnist"
     config.model = ml_collections.ConfigDict()
 
     config.checkpoint_dir = "./converted_models/MLP/" + config.model_name + "/" + str(config.model_seed) 
@@ -64,16 +64,16 @@ def get_config():
     config.linear.process_batch_size = 1000
     config.linear.eval_process_batch_size = 1000  # 10000/125
 
-    config.linear.n_epochs = 40
+    config.linear.n_epochs = 200
     config.linear.perform_eval = True
-    config.linear.eval_interval = 5
-    config.linear.save_interval = 10
+    config.linear.eval_interval = 50
+    config.linear.save_interval = 100
 
     # Optimizer Configs
     config.linear.optim_name = "sgd"
     config.linear.optim = ml_collections.ConfigDict()
     config.linear.optim.lr = 1e-2
-    config.linear.optim.nesterov = True
+    config.linear.optim.nesterov = False
     config.linear.optim.momentum = 0.9
 
     config.linear.lr_schedule_name = "linear_schedule"
@@ -102,7 +102,7 @@ def get_config():
     config.sampling.init_samples_at_prior = True
     config.sampling.recompute_ggn_matrix = True
 
-    config.sampling.mackay_update = "function"
+    config.sampling.mackay_update = "weight"
 
     config.sampling.use_g_prior = False
     config.sampling.use_new_objective = True
@@ -124,18 +124,18 @@ def get_config():
     config.sampling.H_L_jitter = 1e-6
 
     # Training Configs
-    config.sampling.process_batch_size = 1000
-    config.sampling.eval_process_batch_size = 1000  # 10000/125
-    config.sampling.n_epochs = 20
-    config.sampling.perform_eval = True
-    config.sampling.eval_interval = 5
-    config.sampling.save_interval = 10
+    config.sampling.process_batch_size = 2000
+    config.sampling.eval_process_batch_size = 2000  # 10000/125
+    config.sampling.n_epochs = 200
+    config.sampling.perform_eval = False
+    config.sampling.eval_interval = 150
+    config.sampling.save_interval = 150
 
     # Optimizer Configs
     config.sampling.optim_name = "sgd"
     config.sampling.optim = ml_collections.ConfigDict()
     if config.sampling.use_g_prior:
-        config.sampling.optim.lr = 200.0
+        config.sampling.optim.lr = 200
     else:
         config.sampling.optim.lr = 2e-1
 

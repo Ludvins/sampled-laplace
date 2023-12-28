@@ -17,6 +17,7 @@ from jax import lax
 from jax.scipy.special import logsumexp
 from jax.tree_util import tree_leaves
 from tqdm import tqdm
+from tensorflow_probability.substrates.jax.stats import brier_score
 
 from jaxutils.data.pt_preprocess import NumpyLoader
 from jaxutils.data.utils import get_agnostic_batch
@@ -837,10 +838,16 @@ def create_sampled_laplace_prediction(
 
     def batched_predict_fn(w_samples, params, model_state):
         # Define the model forward pass
-        def apply_fn(w):
-            return model.apply(
-                {"params": w, **model_state}, batch_inputs, train=False, mutable={}
-            )[0]
+        if model_state is not None:
+            def apply_fn(w):
+                return model.apply(
+                    {"params": w, **model_state}, batch_inputs, train=False, mutable={}
+                )[0]
+        else:
+            def apply_fn(w):
+                return model.apply(
+                    {"params": w}, batch_inputs, train=False, mutable={}
+                )[0]
 
         def per_sample_forward_pass(w_sample):
             w_sample = zeroed_batchnorm_params(w_sample)
@@ -860,7 +867,7 @@ def create_sampled_laplace_prediction(
         f_xμ = all_samples_logits[0]
         marginal_variances = jnp.mean(jnp.power(all_samples_lin_pred, 2), axis=0)
         κ = 1 / jnp.sqrt(1 + jnp.pi * 0.125 * marginal_variances)  # (B, O)
-        py_xs = jax.nn.log_softmax(f_xμ * κ, axis=1)  # (B, O)
+        py_xs2 = jax.nn.log_softmax(f_xμ * κ, axis=1)  # (B, O)
 
         logit_samples = f_xμ[None, :, :] + all_samples_lin_pred  # (K, B, O)
         class_sample_logprobs = jax.nn.log_softmax(logit_samples, axis=2)  # (K, B, O)
@@ -870,15 +877,24 @@ def create_sampled_laplace_prediction(
 
         if method == "gibbs":
             ll = gibbs_mackay_logprob(batch_labels, f_xμ, all_samples_lin_pred)  # B, O
-        elif method == "mc":
-            ll = mc_logprob(batch_labels, f_xμ, all_samples_lin_pred)
-        elif method == "dyadic":
-            ll = dyadic_mc_joint_logprob(batch_labels, f_xμ, all_samples_lin_pred, rng)
+            acc = jax.numpy.argmax(py_xs, -1) == batch_labels
 
-        acc = jax.numpy.argmax(py_xs, -1) == batch_labels
+            probs = jax.nn.softmax(py_xs)
+            oh = jax.nn.one_hot(batch_labels, num_classes=probs.shape[-1],axis = -1)
+            dist = (probs - oh)**2
+            brier = jnp.sum(dist, -1)
+        else:
+            ll = mc_logprob(batch_labels, f_xμ, all_samples_lin_pred)
+            acc = jax.numpy.argmax(py_xs2, -1) == batch_labels
+            probs = jax.nn.softmax(py_xs2)
+            oh = jax.nn.one_hot(batch_labels, num_classes=probs.shape[-1],axis = -1)
+            dist = (probs - oh)**2
+            brier = jnp.sum(dist, -1)
+
         batch_metrics = {
             "ll": ll,
-            "acc": acc
+            "acc": acc,
+            "brier": brier
         }
 
         agg = get_agg_fn(aggregate)

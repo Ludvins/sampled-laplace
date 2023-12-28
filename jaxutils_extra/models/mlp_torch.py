@@ -26,5 +26,6 @@ def get_mlp(name):
     # Load weights
 
     model.load_state_dict(torch.load("weights/" + name))
+    model.eval()
 
     return model

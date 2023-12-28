@@ -3,6 +3,7 @@ from typing import Any
 
 import jax.numpy as jnp
 from flax import linen as nn
+import jax
 
 Moduledef = Any
 class mlp_mnist(nn.Module):
@@ -15,7 +16,6 @@ class mlp_mnist(nn.Module):
 
     def __call__(self, x, train: bool = True):
         x = jnp.reshape(x, (x.shape[0], -1))
-
         x = self.dense1(x)
         x = nn.tanh(x)
         x = self.dense2(x)

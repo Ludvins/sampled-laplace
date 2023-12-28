@@ -2,14 +2,14 @@
 
 import ml_collections
 
-from jaxutils.data.pt_image import METADATA
+from jaxutils_extra.data.pt_image import METADATA
 
 
 def get_config():
     """Config for evaling CIFAR100 on CIFAR100-C."""
     config = ml_collections.ConfigDict()
     config.use_tpu = True
-    config.global_seed = 4
+    config.global_seed = 0
     config.model_seed = config.global_seed
 
     # Dataset Configs
@@ -19,7 +19,7 @@ def get_config():
     config.prediction_method = "gibbs"
 
     config.dataset = ml_collections.ConfigDict()
-    config.dataset.dataset_name = "MNIST"
+    config.dataset.dataset_name = "FMNIST"
     config.dataset.try_gcs = True
     if config.dataset_type == "tf" and config.dataset.try_gcs:
         config.dataset.data_dir = None
@@ -42,14 +42,14 @@ def get_config():
         config.dataset[key] = METADATA[key][config.dataset.dataset_name]
 
     # Model Configs
-    config.model_name = "mlp_mnist"
+    config.model_name = "mlp_fmnist"
     config.model = ml_collections.ConfigDict()
 
     config.checkpoint_dir = "./MLP/" + config.model_name + "/" + str(config.model_seed) + "/last_samples"
 
     ##################### EM Step Configs #####################
     config.num_em_steps = 1
-    config.num_samples = 64
+    config.num_samples = 32
 
     ######################## Sample-then-Optimise Configs #####################
     config.sampling = ml_collections.ConfigDict()

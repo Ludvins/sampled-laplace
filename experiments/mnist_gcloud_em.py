@@ -2,7 +2,7 @@
 
 import ml_collections
 
-from jaxutils.data.pt_image import METADATA
+from jaxutils_extra.data.pt_image import METADATA
 
 
 def get_config():
@@ -11,8 +11,10 @@ def get_config():
 
     config.use_tpu = True
     config.global_seed = 0
-    config.model_seed = 0
+    config.model_seed = config.global_seed
     config.datasplit_seed = 0
+    
+    config.load_last_prior_prec = False
 
     # Dataset Configs
     config.dataset_type = "tf"
@@ -28,7 +30,7 @@ def get_config():
     config.dataset.flatten_img = False
     config.dataset.val_percent = 0.0
     config.dataset.perform_augmentations = False
-    config.dataset.num_workers = 16
+    config.dataset.num_workers = 2
 
     config.dataset.cache = False
     config.dataset.repeat_after_batching = False
@@ -47,46 +49,45 @@ def get_config():
     config.model_name = "mlp_mnist"
     config.model = ml_collections.ConfigDict()
 
-    config.checkpoint_dir = "./converted_models/mnist/" + config.model_name + "/" + str(config.model_seed) 
-    config.save_dir = "./MNIST/" + config.model_name + "/" + str(config.model_seed) + "/samples"
-    config.prior_save_dir = "./MNIST/" + config.model_name + "/" + str(config.model_seed) + "/prior.txt"
-    config.time_save_dir = "./MNIST/" + config.model_name + "/" + str(config.model_seed) + "/time.txt"
+    config.checkpoint_dir = "./converted_models/MLP/" + config.model_name + "/" + str(config.model_seed) 
+    config.save_dir = "./MLP/" + config.model_name + "/" + str(config.model_seed) + "/samples"
+    config.prior_save_dir = "./MLP/" + config.model_name + "/" + str(config.model_seed) + "/prior.txt"
+    config.time_save_dir = "./MLP/" + config.model_name + "/" + str(config.model_seed) + "/time.txt"
 
 
     ##################### EM Step Configs #####################
-    config.num_em_steps = 8
-    config.load_last_prior_prec = False
+    config.num_em_steps = 10
 
     ###################### Linear Mode Evaluation Configs ####################
     config.linear = ml_collections.ConfigDict()
-
     # Training Configs
-    config.linear.process_batch_size = 2000
-    config.linear.eval_process_batch_size = 2000  # 10000/125
+    config.linear.process_batch_size = 1000
+    config.linear.eval_process_batch_size = 1000  # 10000/125
 
-    config.linear.n_epochs = 25
+    config.linear.n_epochs = 40
     config.linear.perform_eval = True
     config.linear.eval_interval = 5
-    config.linear.save_interval = 25
+    config.linear.save_interval = 10
 
     # Optimizer Configs
     config.linear.optim_name = "sgd"
     config.linear.optim = ml_collections.ConfigDict()
-    config.linear.optim.lr = 5e-3
+    config.linear.optim.lr = 1e-2
     config.linear.optim.nesterov = True
     config.linear.optim.momentum = 0.9
 
-    config.linear.optim.absolute_clipping = 0.1  # None to avoid clipping
+    config.linear.lr_schedule_name = "linear_schedule"
+    config.linear.lr_schedule = ml_collections.ConfigDict()
+
+    if config.linear.lr_schedule_name == "exponential_decay":
+        config.linear.lr_schedule.decay_rate = 0.995
+        config.linear.lr_schedule.transition_steps = 1
     linear_num_steps = int(
         config.linear.n_epochs
         * config.dataset.num_train
         * (1 - config.dataset.val_percent)
         / config.linear.process_batch_size
     )
-
-    config.linear.lr_schedule_name = "linear_schedule"
-    config.linear.lr_schedule = ml_collections.ConfigDict()
-
     if config.linear.lr_schedule_name == "linear_schedule":
         config.linear.lr_schedule.decay_rate = 1 / 33
         config.linear.lr_schedule.transition_steps = int(
@@ -99,7 +100,7 @@ def get_config():
 
     config.sampling.compute_exact_w_samples = False
     config.sampling.init_samples_at_prior = True
-    config.sampling.recompute_ggn_matrix = False
+    config.sampling.recompute_ggn_matrix = True
 
     config.sampling.mackay_update = "function"
 
@@ -107,58 +108,46 @@ def get_config():
     config.sampling.use_new_objective = True
 
     if config.sampling.use_g_prior:
-        config.prior_prec = 1000.0
+        config.prior_prec = 1.0
     else:
-        config.prior_prec = 10000.0
+        config.prior_prec = 1000.0
 
     config.sampling.target_samples_path = (
-        "./MNIST/"  + config.model_name + "/" + str(config.model_seed) + "/target_samples.h5"
+        "./MLP/"  + config.model_name + "/" + str(config.model_seed) + "/target_samples.h5"
     )
     config.sampling.ggn_matrix_path = (
-        "./MNIST/"  + config.model_name + "/" + str(config.model_seed) + "/H.npy"
+        "./MLP/"  + config.model_name + "/" + str(config.model_seed) + "/H.npy"
     )
 
-    config.sampling.num_samples = 6
+    config.sampling.num_samples = 8
+
     config.sampling.H_L_jitter = 1e-6
 
     # Training Configs
-    config.sampling.process_batch_size = 100
-    config.sampling.eval_process_batch_size = 200  # 10000/125
-    config.sampling.n_epochs = 10
+    config.sampling.process_batch_size = 1000
+    config.sampling.eval_process_batch_size = 1000  # 10000/125
+    config.sampling.n_epochs = 20
     config.sampling.perform_eval = True
     config.sampling.eval_interval = 5
-    config.sampling.save_interval = 20
+    config.sampling.save_interval = 10
 
     # Optimizer Configs
     config.sampling.optim_name = "sgd"
     config.sampling.optim = ml_collections.ConfigDict()
     if config.sampling.use_g_prior:
-        config.sampling.optim.lr = 1e-2
+        config.sampling.optim.lr = 200.0
     else:
-        config.sampling.optim.lr = 1e-3
+        config.sampling.optim.lr = 2e-1
 
     config.sampling.optim.nesterov = True
     config.sampling.optim.momentum = 0.9
 
     config.sampling.update_scheme = "polyak"  # polyak
-    config.sampling.update_step_size = None
-    config.sampling.lr_schedule_name = "linear_schedule"
+    config.sampling.update_step_size = 0.01
+    config.sampling.lr_schedule_name = None  # "exponential_decay"
     config.sampling.lr_schedule = ml_collections.ConfigDict()
-
-    config.sampling.optim.absolute_clipping = 1  # None to avoid clipping
-
-    sampling_num_steps = int(
-        config.sampling.n_epochs
-        * config.dataset.num_train
-        / config.sampling.process_batch_size
-    )
-
-    if config.sampling.lr_schedule_name == "linear_schedule":
-        config.sampling.lr_schedule.decay_rate = 1 / 33
-        config.sampling.lr_schedule.transition_steps = int(
-            sampling_num_steps * 0.95
-        )  # I set this to N steps * 0.75
-        config.sampling.lr_schedule.end_value = config.sampling.optim.lr / 330
+    config.sampling.lr_schedule.decay_rate = 1
+    config.sampling.lr_schedule.transition_steps = 1
 
     # Wandb Configs
     config.wandb = ml_collections.ConfigDict()

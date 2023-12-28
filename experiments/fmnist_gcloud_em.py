@@ -2,7 +2,7 @@
 
 import ml_collections
 
-from jaxutils.data.pt_image import METADATA
+from jaxutils_extra.data.pt_image import METADATA
 
 
 def get_config():
@@ -14,13 +14,13 @@ def get_config():
     config.model_seed = config.global_seed
     config.datasplit_seed = 0
     
-    config.load_last_prior_prec = True
+    config.load_last_prior_prec = False
 
     # Dataset Configs
     config.dataset_type = "tf"
 
     config.dataset = ml_collections.ConfigDict()
-    config.dataset.dataset_name = "MNIST"
+    config.dataset.dataset_name = "FMNIST"
     config.dataset.try_gcs = False
     if config.dataset_type == "tf" and config.dataset.try_gcs:
         config.dataset.data_dir = None
@@ -46,28 +46,28 @@ def get_config():
         config.dataset[key] = METADATA[key][config.dataset.dataset_name]
 
     # Model Configs
-    config.model_name = "mlp_mnist"
+    config.model_name = "mlp_fmnist"
     config.model = ml_collections.ConfigDict()
 
     config.checkpoint_dir = "./converted_models/MLP/" + config.model_name + "/" + str(config.model_seed) 
-    config.save_dir = "./MLP/" + config.model_name + "/" + str(config.model_seed) + "/last_samples"
+    config.save_dir = "./MLP/" + config.model_name + "/" + str(config.model_seed) + "/samples"
     config.prior_save_dir = "./MLP/" + config.model_name + "/" + str(config.model_seed) + "/prior.txt"
-    config.time_save_dir = "./MLP/" + config.model_name + "/" + str(config.model_seed) + "/last_time.txt"
+    config.time_save_dir = "./MLP/" + config.model_name + "/" + str(config.model_seed) + "/time.txt"
 
 
     ##################### EM Step Configs #####################
-    config.num_em_steps = 1
+    config.num_em_steps = 100
 
     ###################### Linear Mode Evaluation Configs ####################
     config.linear = ml_collections.ConfigDict()
     # Training Configs
-    config.linear.process_batch_size = 1000
-    config.linear.eval_process_batch_size = 1000  # 10000/125
+    config.linear.process_batch_size = 2000
+    config.linear.eval_process_batch_size = 2000  # 10000/125
 
-    config.linear.n_epochs = 40
-    config.linear.perform_eval = True
-    config.linear.eval_interval = 5
-    config.linear.save_interval = 10
+    config.linear.n_epochs = 100
+    config.linear.perform_eval = False
+    config.linear.eval_interval = 150
+    config.linear.save_interval = 150
 
     # Optimizer Configs
     config.linear.optim_name = "sgd"
@@ -119,23 +119,23 @@ def get_config():
         "./MLP/"  + config.model_name + "/" + str(config.model_seed) + "/H.npy"
     )
 
-    config.sampling.num_samples = 32
+    config.sampling.num_samples = 8
 
     config.sampling.H_L_jitter = 1e-6
 
     # Training Configs
-    config.sampling.process_batch_size = 1000
-    config.sampling.eval_process_batch_size = 1000  # 10000/125
-    config.sampling.n_epochs = 20
-    config.sampling.perform_eval = True
-    config.sampling.eval_interval = 5
-    config.sampling.save_interval = 10
+    config.sampling.process_batch_size = 2000
+    config.sampling.eval_process_batch_size = 2000  # 10000/125
+    config.sampling.n_epochs = 100
+    config.sampling.perform_eval = False
+    config.sampling.eval_interval = 150
+    config.sampling.save_interval = 150
 
     # Optimizer Configs
     config.sampling.optim_name = "sgd"
     config.sampling.optim = ml_collections.ConfigDict()
     if config.sampling.use_g_prior:
-        config.sampling.optim.lr = 200.0
+        config.sampling.optim.lr = 200
     else:
         config.sampling.optim.lr = 2e-1
 

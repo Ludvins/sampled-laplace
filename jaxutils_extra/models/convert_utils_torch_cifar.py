@@ -164,7 +164,6 @@ def convert_model(
     """Utility function to transfer params from Pytorch models to Flax."""
     # TODO: Add a check that params is frozen and not flat, and not repeat
     jax_params = flatten_dict(unfreeze(jax_params))
-
     if model_name in ["resnet18", "resnet20", "resnet32", "resnet44", "resnet56"]:
         convert_keys = convert_resnet_param_keys
     elif model_name in ["mlp_mnist", "mlp_fmnist"]:
@@ -174,7 +173,6 @@ def convert_model(
 
     jax_to_pytorch_keys, converted_jax_params = {}, {}
     for key, param in pytorch_model.state_dict().items():
-
         if convert_keys(key, model_name) is not None:
             jax_to_pytorch_keys[convert_keys(key, model_name)] = key
 
