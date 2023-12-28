@@ -15,7 +15,7 @@ import jaxutils_extra.models as models
 import wandb
 from jaxutils_extra.pt_ood import load_corrupted_dataset, load_rotated_dataset,load_ood_dataset
 from jaxutils.data.utils import get_agnostic_iterator
-from jaxutils.train.classification import create_eval_step
+from jaxutils_extra.train.classification import create_eval_step
 from jaxutils.train.utils import eval_epoch
 from jaxutils.utils import flatten_nested_dict, setup_training, update_config_dict
 from src.sampling import SamplingPredictState, create_sampling_prediction_step
